@@ -1,3 +1,6 @@
+## Author: Tomas Babej
+## License: undetermined
+
 import os
 import datetime
 import icalendar
