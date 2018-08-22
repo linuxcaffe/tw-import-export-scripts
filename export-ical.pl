@@ -32,7 +32,7 @@ use warnings;
 eval "use JSON";
 if ($@)
 {
-  print "Error: You need to install the JSON Perl module.\r\n";
+  print "Error: You need to install the JSON Perl module.\n";
   exit 1;
 }
 
