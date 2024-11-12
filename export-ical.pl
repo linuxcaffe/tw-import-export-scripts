@@ -45,57 +45,64 @@ if ($command =~ /No matches/)
 }
 
 # Generate output.
-print "BEGIN:VCALENDAR\n",
-      "VERSION:2.0\n",
-      "PRODID:=//GBF/taskwarrior 1.9.4//EN\n";
+print "BEGIN:VCALENDAR\r\n",
+      "VERSION:2.0\r\n",
+      "PRODID:=//GBF/taskwarrior 1.9.4//EN\r\n";
 
 for my $task (split "\n", qx{$command})
 {
   my $data = from_json ($task);
 
-  print "BEGIN:VTODO\n";
-  print "UID:$data->{'uuid'}\n";
-  print "DTSTAMP:$data->{'entry'}\n";
-  print "DTSTART:$data->{'start'}\n" if exists $data->{'start'};
-  print "DUE:$data->{'due'}\n"       if exists $data->{'due'};
-  print "COMPLETED:$data->{'end'}\n" if exists $data->{'end'};
-  print "SUMMARY:$data->{'description'}\n";
-  print "CLASS:PRIVATE\n";
-  print "CATEGORIES:", join (',', @{$data->{'tags'}}), "\n" if exists $data->{'tags'};
+  # Due date must be equal or greater than dstart
+  if (exists $data->{'due'} and exists $data->{'start'} and $data->{'due'} lt $data->{'start'}) {
+      next;
+  }
+
+  # Lines can be no longer than 75 char
+
+  print "BEGIN:VTODO\r\n";
+  print "UID:$data->{'uuid'}\r\n";
+  print "DTSTAMP:$data->{'entry'}\r\n";
+  print "DTSTART:$data->{'start'}\r\n" if exists $data->{'start'};
+  print "DUE:$data->{'due'}\r\n"       if exists $data->{'due'};
+  print "COMPLETED:$data->{'end'}\r\n" if exists $data->{'end'};
+  print substr("SUMMARY:$data->{'description'}", 0, 75) . "\r\n";
+  print "CLASS:PRIVATE\r\n";
+  print "CATEGORIES:", join (',', @{$data->{'tags'}}), "\r\n" if exists $data->{'tags'};
 
   # Priorities map to a 1-9 scale.
   if (exists $data->{'priority'})
   {
     print "PRIORITY:", ($data->{'priority'} eq 'H' ? '1' :
                         $data->{'priority'} eq 'M' ? '5' :
-                                                     '9'), "\n";
+                                                     '9'), "\r\n";
   }
 
   # Status maps differently.
   my $status = $data->{'status'};
   if ($status eq 'pending' || $status eq 'waiting')
   {
-    print "STATUS:", (exists $data->{'start'} ? 'IN-PROCESS' : 'NEEDS-ACTION'), "\n";
+    print "STATUS:", (exists $data->{'start'} ? 'IN-PROCESS' : 'NEEDS-ACTION'), "\r\n";
   }
   elsif ($status eq 'completed')
   {
-    print "STATUS:COMPLETED\n";
+    print "STATUS:COMPLETED\r\n";
   }
   elsif ($status eq 'deleted')
   {
-    print "STATUS:CANCELLED\n";
+    print "STATUS:CANCELLED\r\n";
   }
 
   # Annotations become comments.
   if (exists $data->{'annotations'})
   {
-    print "COMMENT:$_->{'description'}\n" for @{$data->{'annotations'}};
+    print substr("COMMENT:$_->{'description'}\r\n" , 0, 75) for @{$data->{'annotations'}};
   }
 
-  print "END:VTODO\n";
+  print "END:VTODO\r\n";
 }
 
-print "END:VCALENDAR\n";
+print "END:VCALENDAR\r\n";
 exit 0;
 
 ################################################################################
